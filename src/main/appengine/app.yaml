@@ -1,0 +1,40 @@
+runtime: java
+env: flex
+threadsafe: false
+
+handlers:
+- url: /.*
+  script: this field is required, but ignored
+  secure: always
+
+instance_class: F4
+env_variables:
+  SPRING_PROFILES_ACTIVE: "gcp"
+readiness_check:
+  app_start_timeout_sec: 60
+
+skip_files:
+- ^(.*/)?\.bak$
+
+resources:
+  cpu: 2
+  memory_gb: 2
+  disk_size_gb: 10
+  volumes:
+  - name: ramdisk1
+    volume_type: tmpfs
+    size_gb: 0.5
+
+liveness_check:
+  path: "/actuator/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 3
+  cool_down_period_sec: 60
+  cpu_utilization:
+    target_utilization: 0.8

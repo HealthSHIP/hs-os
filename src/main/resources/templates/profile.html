@@ -1,0 +1,490 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:form="http://www.w3.org/1999/xhtml" lang="en"
+      layout:decorate="~{layout}">
+<head>
+    <title>Edit my profile</title>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let AVATAR_PATH = /*[[ ${'/api/avatars/' + @spbe5Service.encrypt(user.getUsername())} ]]*/ '/api/avatars/null';
+
+        $(document).ready(function () {
+            $('#userUOM').change(function() {
+                $('#userUOM_helpBlock').html(`Change to notification radius will only be applied after you have saved this form`);
+            });
+
+            // update behaviours for avatar form
+            var avatarModal = $('#avatarModal');
+            var avatarImg = $('img#avatar');
+
+            $('#submitAvatar').click(function (f) {
+                f.preventDefault();
+                var btn = $(this).find(':button[type=submit]');
+                // temporarily disable
+                btn.html(`<i class="fas fa-spinner fa-spin"></i> checking image`)
+                    .prop('disabled', true);
+                var fd = new FormData($("#avatarForm")[0]);
+                fd.append([[ ${_csrf.parameterName} ]], [[ ${_csrf.token} ]]);
+                $.ajax({
+                    type: 'POST',
+                    enctype: 'multipart/form-data',
+                    url: '/api/avatars',
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    data: fd,
+                    success: function () {
+                        btn.html(`success!`);
+                        // update image in background
+                        avatarImg.attr('src', AVATAR_PATH + '?_s=' + new Date().getTime());
+                        // close modal after 1s
+                        setTimeout(function () {
+                            avatarModal.modal('hide')
+                        }, 1000);
+                    },
+                    error: function () {
+                        $.toast({
+                            title: 'System message',
+                            subtitle: 'Now',
+                            content: `Error uploading photo: please ensure it's an image of less than 1MB and try again`,
+                            type: 'danger',
+                            delay: 4000,
+                        });
+                        btn.prop('disabled', false);
+                        btn.html(`<i class="fas fa-file-upload"></i> Upload`)
+                    }
+                })
+            });
+        });
+        /*]]>*/
+    </script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let autocomplete = {};
+        let circles = {};
+        let mapInstances = [];
+        // holds array of map elements (not map object instances!)
+        let mapElements = [];
+        /*]]>*/
+    </script>
+    <script th:src="@{/js/LocationServices.js}"></script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Edit my profile</h2>
+
+                <div th:if="${param.init}" class="alert alert-success">
+                    Welcome! Let's get you started: please enter, at minimum, your full name and your location
+                </div>
+
+                <form th:action="@{/profile}" th:object="${userProfileDTO}"
+                      method="POST" id="profileForm">
+
+                    <h3>About you</h3>
+
+                    <h4 class="small">* indicates required field</h4>
+
+                    <div class="form-group row">
+                        <label th:for="*{name}" class="col-4 col-form-label">Your full name*</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-address-card mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input th:field="*{name}" type="text" class="form-control"
+                                       aria-describedby="nameHelpBlock">
+                            </div>
+                            <span id="nameHelpBlock" class="form-text text-muted">
+                                Note that this is visible to other registered site users
+                            </span>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('name')}">
+                                <div th:each="error : ${#fields.errors('name')}" th:text="${error}">Validation error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{location}" class="col-4 col-form-label">Location*</label>
+                        <div class="col-8">
+                            <input th:field="*{locationLng}" type="hidden"/> <input th:field="*{locationLat}" type="hidden"/>
+                            <input id="location" th:field="*{location}" type="text" class="form-control"
+                                   data-toggle="modal" aria-describedby="locationHelpBlock"
+                                   data-target="#locationModal" placeholder="Street name, or post code eg EH12"> <span
+                                id="locationHelpBlock" class="form-text text-muted">
+                                General location only: for your privacy we reduce the accuracy of the location we store to ±1km
+                            </span>
+
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('location')}">
+                                <div th:each="error : ${#fields.errors('location')}" th:text="${error}">err</div>
+                            </div>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('locationLng')}">
+                                <div th:each="error : ${#fields.errors('locationLng')}" th:text="${error}">err</div>
+                            </div>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('locationLat')}">
+                                <div th:each="error : ${#fields.errors('locationLat')}" th:text="${error}">err</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{timezone}" class="col-4 col-form-label">Timezone*</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <select class="form-control" th:field="*{timezone}">
+                                    <option value="Etc/GMT+12">(GMT-12:00) International Date Line West</option>
+                                    <option value="Pacific/Midway">(GMT-11:00) Midway Island, Samoa</option>
+                                    <option value="Pacific/Honolulu">(GMT-10:00) Hawaii</option>
+                                    <option value="US/Alaska">(GMT-09:00) Alaska</option>
+                                    <option value="America/Los_Angeles">(GMT-08:00) Pacific Time (US & Canada)</option>
+                                    <option value="America/Tijuana">(GMT-08:00) Tijuana, Baja California</option>
+                                    <option value="US/Arizona">(GMT-07:00) Arizona</option>
+                                    <option value="America/Chihuahua">(GMT-07:00) Chihuahua, La Paz, Mazatlan</option>
+                                    <option value="US/Mountain">(GMT-07:00) Mountain Time (US & Canada)</option>
+                                    <option value="America/Managua">(GMT-06:00) Central America</option>
+                                    <option value="US/Central">(GMT-06:00) Central Time (US & Canada)</option>
+                                    <option value="America/Mexico_City">(GMT-06:00) Guadalajara, Mexico City, Monterrey
+                                    </option>
+                                    <option value="Canada/Saskatchewan">(GMT-06:00) Saskatchewan</option>
+                                    <option value="America/Bogota">(GMT-05:00) Bogota, Lima, Quito, Rio Branco</option>
+                                    <option value="US/Eastern">(GMT-05:00) Eastern Time (US & Canada)</option>
+                                    <option value="US/East-Indiana">(GMT-05:00) Indiana (East)</option>
+                                    <option value="Canada/Atlantic">(GMT-04:00) Atlantic Time (Canada)</option>
+                                    <option value="America/Caracas">(GMT-04:00) Caracas, La Paz</option>
+                                    <option value="America/Manaus">(GMT-04:00) Manaus</option>
+                                    <option value="America/Santiago">(GMT-04:00) Santiago</option>
+                                    <option value="Canada/Newfoundland">(GMT-03:30) Newfoundland</option>
+                                    <option value="America/Sao_Paulo">(GMT-03:00) Brasilia</option>
+                                    <option value="America/Argentina/Buenos_Aires">(GMT-03:00) Buenos Aires, Georgetown
+                                    </option>
+                                    <option value="America/Godthab">(GMT-03:00) Greenland</option>
+                                    <option value="America/Montevideo">(GMT-03:00) Montevideo</option>
+                                    <option value="America/Noronha">(GMT-02:00) Mid-Atlantic</option>
+                                    <option value="Atlantic/Cape_Verde">(GMT-01:00) Cape Verde Is.</option>
+                                    <option value="Atlantic/Azores">(GMT-01:00) Azores</option>
+                                    <option value="Africa/Casablanca">(GMT+00:00) Casablanca, Monrovia, Reykjavik
+                                    </option>
+                                    <option value="Europe/London" selected="selected">Greenwich Mean Time: Dublin,
+                                        Edinburgh, Lisbon, London
+                                    </option>
+                                    <option value="Europe/Amsterdam">(GMT+01:00) Amsterdam, Berlin, Bern, Rome,
+                                        Stockholm, Vienna
+                                    </option>
+                                    <option value="Europe/Belgrade">(GMT+01:00) Belgrade, Bratislava, Budapest,
+                                        Ljubljana, Prague
+                                    </option>
+                                    <option value="Europe/Brussels">(GMT+01:00) Brussels, Copenhagen, Madrid, Paris
+                                    </option>
+                                    <option value="Europe/Sarajevo">(GMT+01:00) Sarajevo, Skopje, Warsaw, Zagreb
+                                    </option>
+                                    <option value="Africa/Lagos">(GMT+01:00) West Central Africa</option>
+                                    <option value="Asia/Amman">(GMT+02:00) Amman</option>
+                                    <option value="Europe/Athens">(GMT+02:00) Athens, Bucharest, Istanbul</option>
+                                    <option value="Asia/Beirut">(GMT+02:00) Beirut</option>
+                                    <option value="Africa/Cairo">(GMT+02:00) Cairo</option>
+                                    <option value="Africa/Harare">(GMT+02:00) Harare, Pretoria</option>
+                                    <option value="Europe/Helsinki">(GMT+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn,
+                                        Vilnius
+                                    </option>
+                                    <option value="Asia/Jerusalem">(GMT+02:00) Jerusalem</option>
+                                    <option value="Europe/Minsk">(GMT+02:00) Minsk</option>
+                                    <option value="Africa/Windhoek">(GMT+02:00) Windhoek</option>
+                                    <option value="Asia/Kuwait">(GMT+03:00) Kuwait, Riyadh, Baghdad</option>
+                                    <option value="Europe/Moscow">(GMT+03:00) Moscow, St. Petersburg, Volgograd</option>
+                                    <option value="Africa/Nairobi">(GMT+03:00) Nairobi</option>
+                                    <option value="Asia/Tbilisi">(GMT+03:00) Tbilisi</option>
+                                    <option value="Asia/Tehran">(GMT+03:30) Tehran</option>
+                                    <option value="Asia/Muscat">(GMT+04:00) Abu Dhabi, Muscat</option>
+                                    <option value="Asia/Baku">(GMT+04:00) Baku</option>
+                                    <option value="Asia/Yerevan">(GMT+04:00) Yerevan</option>
+                                    <option value="Asia/Kabul">(GMT+04:30) Kabul</option>
+                                    <option value="Asia/Yekaterinburg">(GMT+05:00) Yekaterinburg</option>
+                                    <option value="Asia/Karachi">(GMT+05:00) Islamabad, Karachi, Tashkent</option>
+                                    <option value="Asia/Calcutta">(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi
+                                    </option>
+                                    <option value="Asia/Calcutta">(GMT+05:30) Sri Jayawardenapura</option>
+                                    <option value="Asia/Katmandu">(GMT+05:45) Kathmandu</option>
+                                    <option value="Asia/Almaty">(GMT+06:00) Almaty, Novosibirsk</option>
+                                    <option value="Asia/Dhaka">(GMT+06:00) Astana, Dhaka</option>
+                                    <option value="Asia/Rangoon">(GMT+06:30) Yangon (Rangoon)</option>
+                                    <option value="Asia/Bangkok">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
+                                    <option value="Asia/Krasnoyarsk">(GMT+07:00) Krasnoyarsk</option>
+                                    <option value="Asia/Hong_Kong">(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi
+                                    </option>
+                                    <option value="Asia/Kuala_Lumpur">(GMT+08:00) Kuala Lumpur, Singapore</option>
+                                    <option value="Asia/Irkutsk">(GMT+08:00) Irkutsk, Ulaan Bataar</option>
+                                    <option value="Australia/Perth">(GMT+08:00) Perth</option>
+                                    <option value="Asia/Taipei">(GMT+08:00) Taipei</option>
+                                    <option value="Asia/Tokyo">(GMT+09:00) Osaka, Sapporo, Tokyo</option>
+                                    <option value="Asia/Seoul">(GMT+09:00) Seoul</option>
+                                    <option value="Asia/Yakutsk">(GMT+09:00) Yakutsk</option>
+                                    <option value="Australia/Adelaide">(GMT+09:30) Adelaide</option>
+                                    <option value="Australia/Darwin">(GMT+09:30) Darwin</option>
+                                    <option value="Australia/Brisbane">(GMT+10:00) Brisbane</option>
+                                    <option value="Australia/Canberra">(GMT+10:00) Canberra, Melbourne, Sydney</option>
+                                    <option value="Australia/Hobart">(GMT+10:00) Hobart</option>
+                                    <option value="Pacific/Guam">(GMT+10:00) Guam, Port Moresby</option>
+                                    <option value="Asia/Vladivostok">(GMT+10:00) Vladivostok</option>
+                                    <option value="Asia/Magadan">(GMT+11:00) Magadan, Solomon Is., New Caledonia
+                                    </option>
+                                    <option value="Pacific/Auckland">(GMT+12:00) Auckland, Wellington</option>
+                                    <option value="Pacific/Fiji">(GMT+12:00) Fiji, Kamchatka, Marshall Is.</option>
+                                    <option value="Pacific/Tongatapu">(GMT+13:00) Nuku'alofa</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label for="introduction" class="col-4 col-form-label">Introduce yourself</label>
+                        <div class="col-8">
+                        <textarea id="introduction" th:field="*{introduction}" cols="40" rows="5" class="form-control"
+                                  maxlength="1000" aria-describedby="introductionHelpBlock"></textarea> <span
+                                th:if="${user.getUserType().canCreateRequests()}" id="introductionHelpBlock"
+                                class="form-text text-muted">
+                            Let volunteers know a little about you and the help you are looking for. It's good
+                            to include anything specific that the volunteer needs to know
+                                (max 1000 characters)
+                            </span> <span th:if="${user.getUserType().asString() == 'student'}"
+                                          id="introductionHelpBlock" class="form-text text-muted">
+                                Describe the things you're good at helping out with; anything you'd like the other party to know
+                            </span>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('introduction')}">
+                                <div th:each="error : ${#fields.errors('introduction')}" th:text="${error}">Validation
+                                    error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-4 col-form-label">Offer help</label>
+                        <div class="col-8">
+                            <div class="mt-2 custom-control custom-control-inline custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="emailUpdates"
+                                       name="emailUpdates" th:field="*{emailUpdates}"/> <label for="emailUpdates"
+                                                                                               class="custom-control-label">
+                                In the spirit of community, both staff and students can offer to help. Select here to
+                                offer help and receive a notification if anyone nearby urgently needs help.</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4>Helpful information</h4>
+
+                    <div class="form-group row">
+                        <label for="phone" class="col-4 col-form-label">Phone</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="fa fa-phone mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input id="phone" th:field="*{phone}" placeholder="Optional" type="text"
+                                       aria-describedby="phone_helpBlock" class="form-control">
+                            </div>
+                            <span id="phone_helpBlock" class="form-text text-muted">
+                                    This number will be shared with other site users
+                                    when you create or respond to a task
+                            </span>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('phone')}">
+                                <div th:each="error : ${#fields.errors('phone')}" th:text="${error}">Validation error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-4 col-form-label sr-only">Phone contact preferences</label>
+                        <div class="col-8 offset-4">
+                            <div class="custom-control custom-control-inline custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="smsUpdates" name="smsUpdates"
+                                       th:field="*{smsUpdates}"/> <label for="smsUpdates" class="custom-control-label">
+                                Permit us to contact / update you by text (SMS's are only sent between 07:00 -- 22:00 local time)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{alternativeEmail}" class="col-4 col-form-label">Alternative email</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-envelope mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input th:field="*{alternativeEmail}" type="text" class="form-control"
+                                       aria-describedby="alternativeEmailHelpBlock" placeholder="Optional">
+                            </div>
+                            <span id="alternativeEmailHelpBlock" class="form-text text-muted">
+                                If specified, we will use this address to send you notifications: note that
+                                your login ID <span class="font-weight-bold">will not change</span>. Admin requests
+                                eg to reset your password will still be sent to your institutional
+                                address.
+                            </span>
+                            <div class="alert alert-danger" th:if="${#fields.hasErrors('alternativeEmail')}">
+                                <div th:each="error : ${#fields.errors('alternativeEmail')}" th:text="${error}">
+                                    Validation error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="col-4 col-form-label">Profile photo</div>
+                        <div class="col-8">
+                            <div class="media mt-3">
+                                <img id="avatar" class="d-flex mr-3 rounded-circle"
+                                     th:src="${'/api/avatars/' + @spbe5Service.encrypt(user.getUsername())}" width="100"
+                                     height="100" th:alt="${'Current profile photo for ' + user.getUsername()}"/>
+                                <div class="media-body my-auto ml-2">
+                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                                            data-target="#avatarModal"><i class="far fa-plus-square"></i> Add new photo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{userUOM}" class="col-4 col-form-label">Unit of measure</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <select th:field="*{userUOM}" id="userUOM" class="form-control"
+                                        aria-describedby="userUOM_helpBlock">
+                                    <option th:each="uom : ${T(org.healthship.models.internal.UserUOM).values()}"
+                                            th:value="${uom}"
+                                            th:text="#{${'user-profile.user-uom.' + uom.name()}}">option</option>
+                                </select>
+                            </div>
+                            <span id="userUOM_helpBlock" class="form-text text-muted"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{notifyRadius}" class="col-4 col-form-label">Notification radius</label>
+                        <div class="col-8">
+                            <div class="input-group">
+                                <select th:field="*{notifyRadius}" class="form-control"
+                                        aria-describedby="notifyRadius_helpBlock">
+                                    <option th:each="radius : ${T(org.healthship.models.internal.Radius).values()}"
+                                            th:value="${radius}"
+                                            th:text="#{${'user-profile.notification-radius.' + radius + '.unit-' + user.getUserUOM().name()}}">option</option>
+                                </select>
+                            </div>
+                            <span id="notifyRadius_helpBlock" class="form-text text-muted">
+                                    You will only be notified by phone or email if users within this distance from you are needing help
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row" th:if="${user.getUserType().asString() == 'student'}">
+                        <label class="col-4 col-form-label">Additional info</label>
+                        <!-- todo: get rid of pt-2, must be a better way of doing this? -->
+                        <div class="col-8 pt-2">
+                            <div class="custom-control custom-checkbox custom-control-inline"
+                                 th:each="additionalFlag : ${T(org.healthship.models.AdditionalFlags).values()}">
+                                <input type="checkbox" class="custom-control-input" th:field="*{additionalFlags}"
+                                       th:value="${additionalFlag}"/> <label class="custom-control-label"
+                                                                             th:for="${#ids.prev('additionalFlags')}"
+                                                                             th:text="#{${'additional-flags.' + additionalFlag}}">Help</label>
+                            </div>
+                            <div class="alert alert-secondary mt-3" th:if="${!user.isPVGVerified()}">
+                                <i class="fas fa-exclamation-triangle text-warning"></i> You informed us at sign-up that
+                                you do not have a PVG. You will not be able to help with activities that require a PVG
+                                until you <a href="/contact"> contact us <i class="fas fa-external-link-alt"></i></a> to
+                                have this changed.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-4 col-form-label" th:if="${user.getUserType().canCreateRequests()}">I
+                            generally need help at the following times (this does not limit your requests)</label>
+                        <label class="col-4 col-form-label" th:if="${user.getUserType().asString() == 'student'}">I can
+                            generally help at the following times</label>
+                        <!-- todo: as above - get rid of pt-2, must be a better way of doing this? -->
+                        <div class="col-8 pt-2">
+                            <div class="custom-control custom-checkbox custom-control-inline"
+                                 th:each="helpTime : ${T(org.healthship.models.HelpTimes).values()}">
+                                <input type="checkbox" class="custom-control-input" th:field="*{helpTimes}"
+                                       th:value="${helpTime}"/> <label class="custom-control-label"
+                                                                       th:for="${#ids.prev('helpTimes')}"
+                                                                       th:text="#{${'help-times.' + helpTime}}">Help</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="offset-4 col-8">
+                            <button name="fs2" type="submit" class="btn btn-primary">
+                                Submit
+                            </button>
+                            <div class="text-danger" id="warning-response"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="avatarModal" tabindex="-1" role="dialog" aria-labelledby="avatarModalTitle"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <form id="avatarForm" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="avatarModalTitle">Upload new image</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <input id="avatarUpload" name="avatar" type="file" class="form-control-file"
+                                   accept=".jpg,.jpeg,.png,.gif,.bmp,.tiff" aria-describedby="avatarUpload_helpBlock">
+                        </div>
+                        <span id="avatarUpload_helpBlock" class="form-text text-muted">
+                                    A square headshot is best: 1MB max, will be automatically scaled to 200x200</span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                        <button id="submitAvatar" type="button" class="btn btn-outline-success"><i class="fas fa-file-upload"></i> Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/elements :: location-modal(location)"></div>
+    <script th:src="${'https://maps.googleapis.com/maps/api/js?key=' + @gMapsApiTokens.getJavaScript() + '&callback=initMaps&libraries=places'}"
+            async defer></script>
+</div>
+
+</body>
+</html>

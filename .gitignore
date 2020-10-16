@@ -1,0 +1,14 @@
+.idea/
+.DS_Store
+lib/
+*.iml
+target/
+/src/main/resources/application-local.properties
+/src/main/resources/application-gcp.properties
+/src/main/resources/application-proxy.properties
+/src/main/resources/application-localsql.properties
+/src/main/resources/application-proxy-int.properties
+/src/main/resources/application-int.properties
+/src/main/resources/data.sql
+/src/main/resources/keys/hs-sso-private.pem
+local/

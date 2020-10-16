@@ -1,0 +1,112 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>About</title>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+
+                <h2>About HealthSHIP</h2>
+
+                <p class="font-weight-bold">Health Students Helping In Pandemics</p>
+
+                <p>Hi! We are HealthSHIP, a student-led social movement rooted in compassion for the health of our
+                    communities.</p>
+
+                <p>We aim to support health and social care staff with everyday tasks from caring responsibilities to
+                    grocery shopping. We believe the impact of COVID-19 will span the entirety of our social fabrics and
+                    that each have a role to play in the hindrance of this pandemic.</p>
+
+                <p>Students may not be able to work on the front line yet, but we can support those that do.</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <h3>Who we are</h3>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <div class="media mt-3">
+                    <img class="d-flex mr-3 rounded-circle" th:src="@{/images/hs-cassandra.png}" width="100"
+                         height="100" alt="Cassandra Baiano"/>
+                    <div class="media-body">
+                        <h5 class="mt-0">Cassandra Baiano</h5>
+                        <p>Organiser extraordinaire. Second year medical student. Otherwise known as <a
+                                href="https://twitter.com/_banandra" target="_blank">@_banandra</a>.</p>
+                    </div>
+                </div>
+                <div class="media my-3">
+                    <img class="d-flex mr-3 rounded-circle" th:src="@{/images/hs-ron.png}" width="100" height="100"
+                         alt="Ronald MacDonald"/>
+                    <div class="media-body">
+                        <h5 class="mt-0">Ronald MacDonald</h5>
+                        <p>Tech and stuff. First year medical student. Often found talking to himself as <a
+                                href="https://twitter.com/quackophage" target="_blank">@quackophage</a>.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="my-auto">
+                    <div><a href="https://www.nationalhealthsupporters.co.uk/" target="_blank"><img
+                            th:src="@{/images/nh_supporters_color.png}" class="img-fluid p-2"
+                            alt="National Health Supporters logo"/></a></div>
+                    <div class="text-muted p-sm-4 p-2">A shout-out to National Health Supporters, who have worked hard
+                        to co-ordinate this effort nationally.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <h3>Credits</h3>
+
+                <p>A very special thanks to John Day for our AWS hosting and to RS for all their guidance and
+                    support.</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="media mt-3">
+                    <img class="d-flex mr-3 " src="/images/cloud-logo.png" width="100"
+                         alt="Google Cloud logo">
+                    <div class="media-body my-auto">
+                        <p class="my-auto text-muted">Many thanks to <a href="https://cloud.google.com">Google Cloud</a> for donating access to their hosting services.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <p>We have built this from the ground up and have not outsourced any of the development of this site.
+                    Therefore users can be reassured that their information will never be used for commercial
+                    purposes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en"
+      layout:decorate="~{layout}">
+<head>
+    <title>Your request for help</title>
+    <script>
+        $(document).ready(function() {
+            $('form#confirmResponseForm').submit(function(){
+                $(this).find(':button[type=submit]')
+                    .html(`<i class="fas fa-spinner fa-spin"></i> doing magic`)
+                    .prop('disabled', true);
+            });
+        });
+    </script>
+    <script th:src="@{/js/LocationServices.js}"></script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+
+                <div class="card mb-4" th:if="${null == helpRequest.getSelectedUser()}">
+                    <div class="card-header d-flex justify-content-between">
+                        <div class="my-auto">Your current request as shown to other users </div>
+                        <a class="btn btn-outline-danger"
+                            th:href="${'/requests/' + helpRequest.getId() + '/delete'}">
+                                <i class="far fa-trash-alt"></i> delete this request
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning"
+                            th:if="${helpRequest.getRequiresPVG()}">Note that details of this request
+                            are only shown to users with PVGs</div>
+                        <h4 class="card-title" th:inline="text">
+                            [[${helpRequest.getCreatedBy().getName()}]] <small class="text-muted">[[${helpRequest.getOrigin()}]]
+                            ([[ ${@distanceCalculator.getCrowDistanceBetweenUserAndOriginAsString(user, helpRequest)} ]] away)</small></h4>
+                        <div th:replace="fragments/elements :: distance-matrix-result(${user}, ${helpRequest})"></div>
+                        <p class="card-text" th:text="${helpRequest.getDescription()}">description</p>
+                        <div class="text-muted" th:inline="text">
+                            [[${#temporals.format(helpRequest.getLocalDateTimeFrom(user.getTimezone()), 'dd MMM yyyy HH:mm')}]] &mdash;
+                            [[${#temporals.format(helpRequest.getLocalDateTimeTo(user.getTimezone()), 'dd MMM yyyy HH:mm')}]]
+                        </div>
+                        <div th:if="${null != helpRequest.getInstructions() && !helpRequest.getInstructions().isEmpty()}"
+                           class="alert alert-info mt-3 mb-0" th:inline="text">
+                            <h5>Additional instructions <small class="text-muted">(only forwarded to volunteer once task has been confirmed)</small></h5>
+                            <p th:text="${helpRequest.getInstructions()}" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Responses</h2>
+
+                <p>Users that have responded to your request will be listed below</p>
+
+                <div class="alert alert-info" th:if="${null == helpRequest.getRespondedBy() || helpRequest.getRespondedBy().isEmpty()}">
+                    None at the moment, please come back later!
+                </div>
+
+                <div class="alert alert-secondary" th:if="${null != helpRequest.getSelectedUser()}">
+                    You've selected a user
+                    <a th:href="${'mailto:' + helpRequest.getSelectedUser().getUsername()}"
+                       th:text="${'(' + helpRequest.getSelectedUser().getUsername() + ')'}">user@example.com</a>
+                    to help you: this request for help can no longer be modified
+                </div>
+
+                <div id="results" th:if="${!helpRequest.getRespondedBy().isEmpty() && null == helpRequest.getSelectedUser()}">
+                    <div class="card mb-3" th:each="user : ${helpRequest.getRespondedBy()}">
+                        <div class="card-body">
+                            <div class="d-md-flex mt-3">
+
+                                <img class="mr-3 rounded-circle" th:src="${'/api/avatars/' + @spbe5Service.encrypt(user.getUsername())}" width="100"
+                                     height="100" alt="User's profile photo"/>
+
+                                <div class="my-auto ml-2">
+                                    <h5 class="card-title mt-3 mt-md-0"
+                                        th:text="${user.getName() + ', ' + user.getLocation()}">
+                                    </h5>
+
+                                    <p class="card-text" th:text="${user.getIntroduction()}"></p>
+
+                                    <form method="post" th:action="@{/requests/confirm}" class="mt-3" id="confirmResponseForm">
+                                        <input type="hidden" name="requestID" th:value="${helpRequest.getId()}"/>
+                                        <input type="hidden" name="username" th:value="${user.getUsername()}"/>
+                                        <button type="submit" class="card-link btn btn-outline-success">
+                                            <i class="far fa-check-circle"></i> Confirm response
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

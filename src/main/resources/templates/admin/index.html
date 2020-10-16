@@ -1,0 +1,235 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>Admin functions</title>
+    <link rel="stylesheet" href="/webjars/leaflet/1.2.0/dist/leaflet.css"/>
+    <script src="/webjars/leaflet/1.2.0/dist/leaflet.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#editUserForm").submit(function (form) {
+                form.preventDefault();
+                window.location.href = "/admin/editUser?username=" + $("#editUser").val();
+            });
+        });
+    </script>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Admin functions</h2>
+
+            <div th:if="${param.createdUser}" class="alert alert-success">
+                User created: they have been sent a link to reset their password
+            </div>
+
+            <div th:if="${param.editedUser}" class="alert alert-success">
+                Updates to user have been saved
+            </div>
+
+            <h4 class="mt-3">User functions</h4>
+
+            <div><a href="/admin/createUser" class="btn btn-primary">Create user</a></div>
+
+            <div class="alert alert-secondary mt-3">
+                <form id="editUserForm">
+                    <div class="form-group">
+                        <h5>Edit user</h5>
+                        <div class="input-group">
+                            <label for="editUser" class="col-form-label sr-only">Edit user</label> <input type="text"
+                                                                                                          class="form-control"
+                                                                                                          id="editUser"
+                                                                                                          placeholder="User email">
+                            <div class="input-group-append">
+                                <button type="submit" id="submitEdit" class="btn btn-success">Go
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h3>Acceptances over the last seven days</h3>
+            <div id="last-7d-acceptances" style="height:400px; width:100%"></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mt-3">
+            <h3>Confirmed clinicians</h3>
+            <div id="confirmed-clinicians" style="height:800px; width:100%"></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mt-3">
+            <h3>HealthSHIP volunteer map</h3>
+            <div id="confirmed-students" style="height:800px; width:100%"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript" th:inline="text">
+
+        var acceptsMap = L.map('last-7d-acceptances').setView([ 56.34,-2.81 ], 10);
+        var cliniciansMap = L.map('confirmed-clinicians').setView([ 56.34,-2.81 ], 10);
+        var studentsMap = L.map('confirmed-students').setView([ 56.34,-2.81 ], 10);
+
+        var acceptancesTileLayer = L.tileLayer('https://mapsvc.healthship.org/tms/1.0.0/osm/EPSG900913/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 18,
+            tileSize: 256,
+            zoomOffset: -1,
+            tms: true
+        }).addTo(acceptsMap);
+
+        var cliniciansTileLayer = L.tileLayer('https://mapsvc.healthship.org/tms/1.0.0/osm/EPSG900913/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 18,
+            tileSize: 256,
+            zoomOffset: -1,
+            tms: true
+        }).addTo(cliniciansMap);
+
+        var studentsTileLayer = L.tileLayer('https://mapsvc.healthship.org/tms/1.0.0/osm/EPSG900913/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 18,
+            tileSize: 256,
+            zoomOffset: -1,
+            tms: true
+        }).addTo(studentsMap);
+
+        var markerSet = new Set();
+
+        L.Icon.Default.imagePath = '/webjars/leaflet/1.2.0/dist/images/';
+
+        // function addMarkerWithRequest(result, map) {
+        //     if (!markerSet.has(result.id)) {
+        //         markerSet.add(result.id);
+        //         L.marker([result.lat, result.lng])
+        //             .addTo(map)
+        //             .bindPopup(`
+        //             <a href="/requests/${result.id}">${new Date(result.dateTimeFrom).toLocaleString([], {
+        //                 "dateStyle": "short", "timeStyle": "short"
+        //             })}</a> (${result.duration})`)
+        //     }
+        // }
+
+        function addMarker(id, lng, lat, map, popup) {
+            if (!markerSet.has(id)) {
+                markerSet.add(id);
+                if (undefined === popup) {
+                    L.marker([lat, lng])
+                        .addTo(map);
+                }
+                else {
+                    L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup(popup);
+                }
+            }
+        }
+
+        function updateAcceptances(mapObj) {
+            var bounds = mapObj.getBounds();
+            $.ajax({
+                url: "/api/map/acceptances",
+                data: {
+                    swLat: bounds._southWest.lat,
+                    swLng: bounds._southWest.lng,
+                    neLat: bounds._northEast.lat,
+                    neLng: bounds._northEast.lng
+                },
+                success: function (data) {
+                    for (idx = 0; idx < data.length; idx++) {
+                        addMarker(
+                            data[idx].id, data[idx].lng, data[idx].lat, acceptsMap,
+                                `<a href="/requests/${data[idx].id}">${new Date(data[idx].dateTimeFrom).toLocaleString([], {
+                                    "dateStyle": "short", "timeStyle": "short"
+                                })}</a> (${data[idx].duration})`
+                        );
+                    }
+                }
+            })
+        }
+
+        function updateClinicians(mapObj) {
+            var bounds = mapObj.getBounds();
+            $.ajax({
+                url: "/api/map/clinicians",
+                data: {
+                    swLat: bounds._southWest.lat,
+                    swLng: bounds._southWest.lng,
+                    neLat: bounds._northEast.lat,
+                    neLng: bounds._northEast.lng
+                },
+                success: function (data) {
+                    for (idx = 0; idx < data.length; idx++) {
+                        addMarker(data[idx].id, data[idx].lng, data[idx].lat, cliniciansMap);
+                    }
+                }
+            })
+        }
+
+        function updateStudents(mapObj) {
+            var bounds = mapObj.getBounds();
+            $.ajax({
+                url: "/api/map/students",
+                data: {
+                    swLat: bounds._southWest.lat,
+                    swLng: bounds._southWest.lng,
+                    neLat: bounds._northEast.lat,
+                    neLng: bounds._northEast.lng
+                },
+                success: function (data) {
+                    for (idx = 0; idx < data.length; idx++) {
+                        addMarker(data[idx].id, data[idx].lng, data[idx].lat, studentsMap);
+                    }
+                }
+            })
+        }
+
+        acceptsMap.on('moveend', function (evt) {
+            updateAcceptances(acceptsMap);
+        });
+
+        cliniciansMap.on('moveend', function (evt) {
+            updateClinicians(cliniciansMap);
+        });
+
+        studentsMap.on('moveend', function (evt) {
+            updateStudents(studentsMap);
+        });
+
+        // update the map as soon as we load the page
+        $(document).ready(function () {
+            updateAcceptances(acceptsMap);
+            updateClinicians(cliniciansMap);
+            updateStudents(studentsMap);
+        });
+    </script>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en"
+      layout:decorate="~{layout}">
+<head>
+    <title>Confirm action</title>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h3>Confirm action</h3>
+
+                <div th:if="${section} == 'cv'" class="alert alert-secondary">
+                    <form th:action="@{'/click/requests/confirm'}" th:object="${actionDTO}" method="post">
+                        <input type="hidden" th:field="*{requestID}">
+                        <input type="hidden" th:field="*{token}">
+                        <input type="hidden" th:field="*{action}">
+                        <input type="hidden" th:field="*{userID}">
+
+                        <button class="btn btn-success" type="submit">Confirm volunteer</button>
+                    </form>
+                </div>
+
+
+                <div th:if="${section} == 'dl'" class="alert alert-secondary">
+                    <form th:action="@{'/click/requests/delete'}" th:object="${actionDTO}" method="post">
+                        <input type="hidden" th:field="*{requestID}">
+                        <input type="hidden" th:field="*{token}">
+                        <input type="hidden" th:field="*{action}">
+
+                        <button class="btn btn-danger" type="submit">Remove listing</button>
+                    </form>
+                </div>
+
+                <a href="/" class="btn btn-outline-primary">Home</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

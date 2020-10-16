@@ -1,0 +1,138 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <title>elements</title>
+</head>
+<body>
+<div th:fragment="student-vouch-box">
+    <div class="alert alert-warning">
+        <h6>It's all about who you know!</h6>
+        Staff members on this site can 'vouch' for student volunteers that they know and trust. This helps our community
+        grow in a safe and friendly manner. <a href="/vouch" class="btn btn-block btn-warning mt-3">find out more</a>
+    </div>
+</div>
+
+<div th:fragment="distance-matrix-result(user, helpRequest)">
+    <th:block th:if="${null != helpRequest.getDestination() && !helpRequest.getDestination().isEmpty()}">
+        <!--/* if the item is already cached, save time by allowing
+         client to perform an async request, otherwise return here */-->
+        <div class="distanceMatrixElement" th:if="${!@liveDistanceService.isCached(helpRequest)}"
+             th:data-type="${helpRequest.getHelpWith().getBehaviour()}" th:data-origin="${helpRequest.getOrigin()}"
+             th:data-destination="${helpRequest.getDestination()}" th:data-request-id="${helpRequest.getId()}"></div>
+        <p class="alert alert-warning" th:if="${@liveDistanceService.isCached(helpRequest)}" th:inline="text">
+            Note: drop off required at <span class="font-weight-bold" th:text="${helpRequest.getDestination()}"></span>
+            ([[ ${@distanceCalculator.getRoadDistanceBetweenOriginAndDestinationAsString(user, helpRequest)} ]] / [[
+            ${@distanceCalculator.getRoadTimeBetweenOriginAndDestinationAsString(helpRequest)} ]] away from [[
+            ${helpRequest.getOrigin()} ]] by road) </p>
+    </th:block>
+</div>
+
+<div th:fragment="location-modal(modalName)">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        mapInstances.push(function initMap() {
+            console.log(/*[[ ${'Initialising map ' + modalName + 'ModalMap'} ]]*/ 'map_log');
+            mapElements[ /*[[ ${modalName} ]]*/ 'mapElement'] = new google.maps.Map(document.getElementById(/*[[ ${modalName + 'ModalMap'} ]]*/ 'map'), {
+                mapTypeControl: false,
+                panControl: false,
+                zoomControl: false,
+                streetViewControl: false,
+                center: {lat: 55.922386, lng: -3.378592},
+                zoom: 6
+            });
+            var input = document.getElementById(/*[[ ${modalName + 'ModalField'} ]]*/ 'field');
+            var options = {
+                types: ['(regions)'],
+                componentRestrictions: {country: ['gbr', 'irl', 'aus', 'nzl']}
+            };
+
+            autocomplete[ /*[[ ${modalName} ]]*/ 'ac'] = new google.maps.places.Autocomplete(input, options);
+
+            function onPlaceChanged() {
+                console.log(/*[[ ${'Place changed: ' + modalName + 'ModalMap'} ]]*/ 'changed_place_log');
+                var place = autocomplete[ /*[[ ${modalName} ]]*/ 'ac'].getPlace();
+                if (place.geometry) {
+                    mapElements[ /*[[ ${modalName} ]]*/ 'mapElement'].panTo(place.geometry.location);
+                    mapElements[ /*[[ ${modalName} ]]*/ 'mapElement'].setZoom(14);
+                    circles[ /*[[ ${modalName} ]]*/ 'circle'] = new google.maps.Circle({
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 2,
+                        fillColor: '#FF0000',
+                        fillOpacity: 0.35,
+                        map: mapElements[ /*[[ ${modalName} ]]*/ 'mapElement'],
+                        center: mapElements[ /*[[ ${modalName} ]]*/ 'mapElement'].center,
+                        radius: 300,
+                        draggable: true
+                    });
+                } else {
+                    document.getElementById(/*[[ ${modalName + 'ModalField'} ]]*/ 'field').placeholder = 'Enter a location';
+                }
+            }
+
+            autocomplete[ /*[[ ${modalName} ]]*/ 'ac'].addListener('place_changed', onPlaceChanged);
+        });
+
+        $(document).ready(function () {
+            $(/*[[ ${'#' + modalName + 'BtnSaveLocation'} ]]*/ 'buttonSave').on('click', function () {
+                console.log('Registering action for button: ' + /*[[ ${modalName} ]]*/ 'field');
+                saveLocation(/*[[ ${modalName} ]]*/ 'field');
+            });
+            $(/*[[ ${'#' + modalName} ]]*/ 'field').focus(function () {
+                $(/*[[ ${'#' + modalName + 'Modal'} ]]*/ 'Modal').modal();
+            });
+        });
+
+        /*]]>*/
+    </script>
+
+    <div class="modal fade" th:id="${modalName + 'Modal'}" tabindex="-1" role="dialog"
+         th:aria-labelledby="${modalName + 'ModalTitle'}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:id="${modalName + 'ModalTitle'}">Set location</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label th:for="${modalName + 'ModalField'}" class="col-form-label sr-only">Location:</label>
+                            <input type="text" class="form-control" th:id="${modalName + 'ModalField'}"
+                                   placeholder="Post code, town or region">
+                        </div>
+                    </form>
+
+                    <div th:id="${modalName + 'ModalMap'}" style="min-height: 250px"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" th:id="${modalName + 'BtnSaveLocation'}">Save
+                        changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

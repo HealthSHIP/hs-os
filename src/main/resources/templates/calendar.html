@@ -1,0 +1,87 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en"
+      layout:decorate="~{layout}">
+<head>
+    <title>Requests Calendar</title>
+    <link href="/webjars/fullcalendar/4.3.1/core/main.min.css" rel="stylesheet" media="screen"/>
+    <link href="/webjars/fullcalendar/4.3.1/bootstrap/main.min.css" rel="stylesheet" media="screen"/>
+    <link href="/webjars/fullcalendar/4.3.1/daygrid/main.min.css" rel="stylesheet" media="screen"/>
+    <link href="/webjars/fullcalendar/4.3.1/timegrid/main.min.css" rel="stylesheet" media="screen"/>
+    <script src="/webjars/fullcalendar/4.3.1/core/main.min.js"></script>
+    <script src="/webjars/fullcalendar/4.3.1/bootstrap/main.min.js"></script>
+    <script src="/webjars/fullcalendar/4.3.1/daygrid/main.min.js"></script>
+    <script src="/webjars/fullcalendar/4.3.1/timegrid/main.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                plugins: [ 'timeGrid', 'bootstrap' ],
+                themeSystem: 'bootstrap',
+                bootstrapFontAwesome: {
+                    close: 'fas fa-times',
+                    prev: 'fas fa-chevron-left',
+                    next: 'fas fa-chevron-right',
+                    prevYear: 'fas fa-angle-double-left',
+                    nextYear: 'fas fa-angle-double-right'
+                },
+                slotDuration: '01:00:00',
+                slotLabelInterval: '03:00',
+                slotLabelFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    omitZeroMinute: false
+                },
+                timeZone: 'UTC',
+                defaultView: 'timeGridWeek',
+                titleRangeSeparator: ' - ',
+                header: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,timeGridDay'
+                },
+                height: 650,
+                events: '/api/requests/calendar'
+            });
+
+            calendar.render();
+        });
+    </script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning d-none d-sm-block d-md-none hide-on-landscape">
+                    <h5 class="alert-heading">Hey buddy!</h5>
+                    Narrow screen you have there - The calendar will look squished.
+                    You might be better viewing this page in landscape, or on a bigger screen!
+                </div>
+                <h2 class="mb-3">People needing help near me</h2>
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

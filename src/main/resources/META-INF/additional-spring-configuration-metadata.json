@@ -1,0 +1,78 @@
+{
+  "properties": [
+    {
+      "name": "api-tokens.gmaps.javaScript",
+      "type": "java.lang.String",
+      "description": "API key for Maps JavaScript API; Places API and Distance Matrix API."
+    },
+    {
+      "name": "api-tokens.vendors.txtlocal",
+      "type": "java.lang.String",
+      "description": "API key for TXTLocal API."
+    },
+    {
+      "name": "hs.devtools.livereload.include-js",
+      "type": "java.lang.String",
+      "description": "Monitor changes in JavaScript files."
+    },
+    {
+      "name": "google.recaptcha.key.site",
+      "type": "java.lang.String",
+      "description": "Recaptcha v2 site key."
+    },
+    {
+      "name": "google.recaptcha.key.secret",
+      "type": "java.lang.String",
+      "description": "Recaptcha v2 site secret."
+    },
+    {
+      "name": "gem-tool.bot-token",
+      "type": "java.lang.String",
+      "description": "API key for Slack bot."
+    },
+    {
+      "name": "mail.subject.prefix",
+      "type": "java.lang.String",
+      "description": "Prefix to include on all emails."
+    },
+    {
+      "name": "mail-from",
+      "type": "java.lang.String",
+      "description": "'From' email address'."
+    },
+    {
+      "name": "smtp.username",
+      "type": "java.lang.String",
+      "description": "Username for SMTP server."
+    },
+    {
+      "name": "smtp.password",
+      "type": "java.lang.String",
+      "description": "Password for SMTP server."
+    },
+    {
+      "name": "smtp.hostname",
+      "type": "java.lang.String",
+      "description": "Hostname for SMTP server."
+    },
+    {
+      "name": "spbe5-password",
+      "type": "java.lang.String",
+      "description": "Passphrase for encrypting data sent to user that must not be tampered with."
+    },
+    {
+      "name": "jira-api-key",
+      "type": "java.lang.String",
+      "description": "API key for creating issues in JIRA."
+    },
+    {
+      "name": "slack.dev-uri",
+      "type": "java.lang.String",
+      "description": "Slackbot API path for notifying Slack in the event of any notifications from HealthSHIP."
+    },
+    {
+      "name": "sms.base-uri",
+      "type": "java.lang.String",
+      "description": "URI for SMS gateway."
+    }
+  ] }

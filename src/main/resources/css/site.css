@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+body {
+    padding-top: 6rem;
+    padding-bottom: 8rem;
+}
+
+.starter-template {
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+label.text-hide {
+    display: none;
+}
+
+.text-overflow {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+#toast-container {
+    z-index:1060;
+    position:fixed;
+    bottom:1em;
+    right:1em;
+    width:250px
+}
+
+.glyphicon-chevron-down, .glyphicon-chevron-up {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+.glyphicon-chevron-up:before {
+    content: "\f077"
+}
+
+.glyphicon-chevron-down:before {
+    content: "\f078"
+}
+
+.autocomplete-suggestions { border: 1px solid #999; background: #FFF; overflow: auto; }
+.autocomplete-suggestion { padding: 2px 5px; white-space: nowrap; overflow: hidden; }
+.autocomplete-selected { background: #F0F0F0; }
+.autocomplete-suggestions strong { font-weight: normal; color: #3399FF; }
+.autocomplete-group { padding: 2px 5px; }
+.autocomplete-group strong { display: block; border-bottom: 1px solid #000; }
+
+/* for prepend width ... remember to use alongside mx-auto */
+.input-group-text {
+    width: 40px;
+}
+.input-group-text span {
+    margin: 0 auto;
+}
+
+/* https://stackoverflow.com/questions/22196587/ */
+.vertical-center {
+    min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+    min-height: 100vh; /* These two lines are counted as one :-)       */
+
+    display: flex;
+    align-items: center;
+}
+
+/* fix button inside ahref https://stackoverflow.com/a/52854100/2979421 */
+.btn-link.btn-anchor {
+    outline: none !important;
+    padding: 0;
+    border: 0;
+    vertical-align: baseline;
+}
+
+/* I love StackOverflow https://stackoverflow.com/a/40585707/2979421 */
+@media (orientation:landscape) {
+    .hide-on-landscape {
+        display: none;
+    }
+}
+
+@media (orientation:portrait) {
+    .hide-on-portrait {
+        display: none;
+    }
+}
+
+@media (max-width: 576px) {
+  html {
+    min-height: 100%;
+    position: relative;
+  }
+  .footer {
+      position: absolute !important;
+      height: 3.75rem;
+  }
+}
+
+/* puts the google places autocomplete dropdown results above the bootstrap modal */
+.pac-container {
+   z-index: 1051 !important;
+}

@@ -1,0 +1,94 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>Respond to request for help</title>
+    <script>
+        $(document).ready(function () {
+            $('form#confirmResponse').submit(function () {
+                $(this).find(':button[type=submit]')
+                    .html(`<i class="fas fa-spinner fa-spin"></i> doing magic`)
+                    .prop('disabled', true);
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).notice)}">
+                    Reply to post</h2>
+                <h2 th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).ad_hoc)}">
+                    Respond to request for help</h2>
+
+                <div class="card my-4">
+                    <div class="card-body">
+                        <h4 class="card-title" th:inline="text">
+                            [[${helpRequest.getCreatedBy().getName()}]] <small class="text-muted">[[${helpRequest.getOrigin()}]]
+                            ([[ ${@distanceCalculator.getCrowDistanceBetweenUserAndOriginAsString(user, helpRequest)} ]]
+                            away)</small></h4>
+                        <div th:replace="fragments/elements :: distance-matrix-result(${user}, ${helpRequest})"
+                             th:if="${null != helpRequest.getDestination() && !helpRequest.getDestination().isEmpty()}"></div>
+                        <p class="card-text" th:text="${helpRequest.getDescription()}">description</p>
+                        <div class="text-muted" th:inline="text">
+                            [[${#temporals.format(helpRequest.getLocalDateTimeFrom(user.getTimezone()), 'dd MMM yyyy
+                            HH:mm')}]] &mdash; [[${#temporals.format(helpRequest.getLocalDateTimeTo(user.getTimezone()),
+                            'dd MMM yyyy HH:mm')}]]
+                        </div>
+
+                        <div th:if="${null != helpRequest.getResources() && helpRequest.getResources().size() > 0}">
+                            <hr>
+                            <h6 class="card-text text-muted">Please see attached documents</h6>
+
+                            <a th:each="resource : ${helpRequest.getResources()}"
+                               th:href="${'/api/resources/' + resource.getId()}" target="_blank"
+                               class="btn btn-outline-info mr-2" th:inline="text"><i class="fas fa-external-link-alt"></i> [[ ${resource.getName()} ]]</a>
+                        </div>
+                    </div>
+                </div>
+
+                <p th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).ad_hoc)}">
+                    Once you click "respond", your contact details will be sent to the person that has requested them.
+                    If the user has opted to auto-accept any responses, this will also remove the request from the home
+                    page. If you are not able to honour this request, please go <a href="/">back home</a>.</p>
+
+                <p th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).notice)}">
+                    Clicking "register interest" will forward your details to the event organiser. By clicking this
+                    button, you are giving us permission to send the event organiser your email address and phone number.</p>
+
+                <form method="post" th:action="@{/requests/reply}" class="mt-3" id="confirmResponse">
+                    <input type="hidden" name="requestID" th:value="${helpRequest.getId()}"/>
+                    <button th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).ad_hoc)}"
+                            type="submit" class="btn btn-outline-danger">Confirm response
+                    </button>
+                    <button th:if="${helpRequest.getRequestType().equals(T(org.healthship.models.internal.RequestType).notice)}"
+                            type="submit" class="btn btn-outline-info">Register interest
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

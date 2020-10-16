@@ -1,0 +1,67 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      lang="en" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>header</title>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md fixed-top bg-light navbar-light">
+        <a href="/" class="navbar-brand">
+            <img th:src="@{/images/g775.png}" height="40" alt="HealthSHIP">
+        </a>
+        <a href="/" class="navbar-brand">HealthSHIP</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <div class="navbar-nav mr-auto nav-link">
+                Health Students Helping In Pandemics
+            </div>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="nav-item" th:classappend="${section == 'about' ? 'active' : ''}">
+                    <a class="nav-link" href="#" th:href="@{/about}">About</a>
+                </li>
+                <li class="nav-item" sec:authorize="isAnonymous()">
+                    <a class="nav-link" href="/login" th:href="@{/login}">
+                        Login
+                    </a>
+                </li>
+                <li class="nav-item" th:classappend="${section == 'profile' ? 'active' : ''}" sec:authorize="!isAnonymous()">
+                    <a class="nav-link" href="#" th:href="@{/profile}">My Profile</a>
+                </li>
+                <li class="nav-item" sec:authorize="!isAnonymous()">
+                    <form action="/logout" method="post" id="logout-form">
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+                        <a class="nav-link" th:href="@{#}" onclick="$('#logout-form').submit();">
+                            <span class="glyphicon glyphicon-log-out" aria-hidden="true"></span>&nbsp;Logout
+                        </a>
+                    </form>
+
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
+</body>
+</html>

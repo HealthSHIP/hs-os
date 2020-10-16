@@ -1,0 +1,543 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>Home</title>
+    <link rel="stylesheet" href="/webjars/leaflet/1.2.0/dist/leaflet.css"/>
+    <script src="/webjars/leaflet/1.2.0/dist/leaflet.js"></script>
+
+    <script>
+        function showProfile(requestID) {
+            var modalProfile = $("#modal-user-profile");
+            var modalProfileBody = $("#modal-user-profile-body");
+
+            $.ajax({
+                url: `/api/requests/${requestID}/ownerProfile`,
+                success: function (data) {
+                    modalProfileBody.html(`
+                        <div class="media mt-3">
+                            <img class="d-flex mr-3 rounded-circle" src="/api/avatars/${data.encImageName}" width="100"
+                                 height="100" alt="User's profile photo"/>
+                            <div class="media-body ml-2">
+                                <h5>Name / location</h5>
+                                <p>${data.name} (user's default location: ${data.location})</p>
+                                <h5>Introduction</h5>
+                                <p>${data.introduction}</p>
+                            </div>
+                        </div>
+                    `);
+                    modalProfile.modal();
+                }
+            })
+        }
+
+        function doSearch() {
+            var filterDistance = $("#filter-distance").val();
+            var orderBy = $("#order-by").val();
+            var resultsElement = $("#search-results");
+
+            $.ajax({
+                url: "/api/requests",
+                data: {
+                    orderBy: orderBy,
+                    filterDistance: filterDistance
+                },
+                success: function (data) {
+                    console.log(data);
+                    if (0 === data.length) {
+                        resultsElement.html(`
+                            <h5 class="alert alert-secondary mt-n2">Nobody near you has requested help right now</h5>
+                            <div class="d-flex justify-content-between alert alert-success">
+                                <i class="far fa-bell pr-3 my-auto"></i>
+                                <div class="text-muted"> Make sure you've <a href="/profile">given us permission
+                                    to notify you</a> if anyone nearby needs help: that's how this all works best for
+                                    everyone!
+                                </div>
+                            </div>
+                        `);
+                        return;
+                    }
+                    resultsElement.html(`
+                        <h5 class="alert alert-secondary mt-n2">Got ${data.length} result${(data.length === 1 ? "" : "s")}</h5>
+                    `);
+                    $.each(data, function (i, searchResult) {
+                        function getAlreadyResponded(entry) {
+                            if (entry.alreadyResponded) {
+                                return `<div class="badge badge-pill badge-success ml-2">already responded</div>`
+                            }
+                            return "";
+                        }
+
+                        function getOptionalDropOff(entry) {
+                            if (undefined !== entry.destination) {
+                                return `<p class="card-text text-muted">Note this requires a drop-off
+                                            ${entry.distanceBetweenOriginAndDestinationFormatted}
+                                            (${entry.durationBetweenOriginAndDestinationFormatted}) from the
+                                            start location (${entry.distanceToDestinationFormatted} from you)
+                                        </p>`
+                            }
+                            return "";
+                        }
+
+                        function getRespondButton(entry) {
+                            // if user has a PVG, return the 'respond' button
+                            // otherwise return error
+                            if (entry.eligible) {
+                                return entry.alreadyResponded ? "" : `<a href="/requests/${entry.id}"
+                                            class="card-link btn btn-outline-info">
+                                            <i class="fas fa-reply"></i> offer help</a>
+                                            <button onclick="showProfile('${entry.id}')" class="btn btn-outline-warning">
+                                            <i class="fas fa-user-md"></i> view profile</button>`;
+                            }
+                            return `<button class="btn btn-outline-warning" disabled>Requires PVG</button>`;
+                        }
+
+                        let orgBadge = (searchResult.ownerType === 'organisation') ? `<a tabindex="0"
+                                            class="badge badge-success text-light mr-2" style="cursor: pointer"
+                                            role="button" data-toggle="popover" data-trigger="focus" title="Org: 'organisation'"
+                                            data-content="A healthcare organisation that has been permitted to post requests for help">org</a>` : '';
+
+                        resultsElement.append(`
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">${orgBadge}${searchResult.createdBy} <small class="text-muted">${searchResult.origin}</small></h5>
+                                        <div>
+                                            <div class="badge badge-pill badge-warning mr-1">${searchResult.helpWith}</div>
+                                            <div class="badge badge-pill badge-secondary mr-1">${searchResult.postedAgo}</div>
+                                            <div class="badge badge-pill badge-primary">${searchResult.distanceToOriginFormatted} away</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted">
+                                        <i class="far fa-clock mr-1"></i>
+                                        ${new Date(searchResult.startDT).toLocaleString([], {
+                                            "dateStyle": "short", "timeStyle": "short"
+                                        })} for ${searchResult.duration}
+                                    </p>
+                                    <p class="card-text">${searchResult.description}</p>
+                                    ${getOptionalDropOff(searchResult)}
+                                    ${getRespondButton(searchResult)}
+                                    ${getAlreadyResponded(searchResult)}
+                                </div>
+                            </div>
+                        `);
+                    });
+                    // update the popovers
+                    $(function(){
+                        $('[data-toggle="popover"]').popover()
+                    });
+                }
+            })
+        }
+
+        $(document).ready(function () {
+            $("#pvg-warning").on('closed.bs.alert', function () {
+                $.ajax({
+                    url: "/api/private",
+                    data: {
+                        action: "dismiss-pvg"
+                    }
+                });
+                $.toast({
+                    title: "System message",
+                    subtitle: 'Now',
+                    content: 'Muted notification: this will appear every time you log back in',
+                    type: "success",
+                    delay: 4000,
+                });
+            });
+
+            // register change calls
+            $("#filter-distance").change(function () {
+                doSearch();
+            });
+            $("#order-by").change(function () {
+                doSearch();
+            });
+
+            // perform search on load
+            doSearch();
+        });
+    </script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <!--/* NB we don't show this row at all on smaller screens if it's a student, because
+                         their 'vouch' button gets moved to the very bottom of the page instead ...
+                         we do this by adding d-none and d-md-block to the row if it's a student */-->
+        <div class="row align-items-end"
+             th:classappend="${user.getUserType().equals(T(org.healthship.models.UserType).student)} ? 'd-none d-md-block' : ''">
+
+            <!--/* if permitted to create requests */-->
+            <div class="col-md-4" th:if="${user.getUserType().canCreateRequests()}">
+                <div class="alert alert-primary">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="alert-heading my-auto">Need help?</h6>
+                        <a class="btn btn-outline-danger my-auto btn-sm" href="/requests"> <i
+                                class="fas fa-hands-helping mr-1"></i> request help</a>
+                    </div>
+                </div>
+            </div>
+            <!--/* push this across if a student (above 'request help' block will not have appeared) */-->
+            <div class="col-md-8 d-none d-md-block"
+                 th:classappend="${user.getUserType().equals(T(org.healthship.models.UserType).student)} ? 'offset-md-4' : ''">
+                <div class="mb-3">
+                    <h5 th:if="${user.getUserType().canCreateRequests()}">
+                        Others needing help near you</h5>
+                    <h5 th:if="${user.getUserType().equals(T(org.healthship.models.UserType).student)}">
+                        People needing help near you</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+
+                <!--/* if able to create requests, and only if we have enough volunteers that
+                        we want to be boasting about any numbers ... */-->
+                <div class="alert alert-success"
+                     th:if="${
+                     user.getUserType().canCreateRequests() &&
+                     @localUsersStats.areSignificant(user, T(org.healthship.models.UserType).student)
+                     }">
+                    <h5 class="alert-heading" th:inline="text"><i class="far fa-laugh"></i>
+                        [[${@localUsersStats.getLocalUsers(user, T(org.healthship.models.UserType).student).getCount()}]] volunteers near you!
+                    </h5>
+                    <div>We'll reach out to them on your behalf as soon as you <a href="/requests">request help</a></div>
+                    <a href="#" class="btn btn-outline-success btn-block text-nowrap mt-3" data-toggle="modal"
+                       data-target="#modal-volunteers-map"><i class="fas fa-map-marked-alt"></i> see nearby volunteers</a>
+                </div>
+
+                <div th:if="${!myOffers.isEmpty()}" class="mb-3">
+                    <h5 class="alert alert-secondary mb-0 d-flex justify-content-between">
+                        <i class="far fa-calendar-check p-1 my-auto mr-2 fa-lg"></i> Your upcoming commitments </h5>
+
+                    <ul class="list-group">
+                        <a class="list-group-item list-group-item-action
+                            d-flex justify-content-between align-items-center" th:each="myOffer : ${myOffers}"
+                           th:href="${'/requests/' + myOffer.getId()}" th:inline="text">
+                            [[${#temporals.format(myOffer.getLocalDateTimeFrom(user.getTimezone()), 'dd MMM yyyy HH:mm')}]],
+                            [[${myOffer.getOrigin()}]] </a>
+                    </ul>
+                </div>
+
+                <!-- calendar is pretty small / rubbish / unusable on mobile so probably little
+                        point showing this div; perhaps add a TODO for an iCal link instead? -->
+                <a class="btn btn-outline-primary btn-block mb-3 d-none d-md-block" href="/calendar"> <i
+                        class="fas fa-calendar-alt my-auto"></i> view requests calendar</a>
+
+                <!--/* if a student */-->
+                <!--/* TODO: nice-to-have -- if they've already been vouched for then don't show this */-->
+                <div class="d-none d-md-block"
+                     th:if="${user.getUserType().equals(T(org.healthship.models.UserType).student)}">
+                    <div th:replace="fragments/elements :: student-vouch-box"></div>
+                </div>
+
+                <div class="mb-3" th:if="${
+                    user.getUserType().canCreateRequests() && !myRequests.isEmpty()
+                    }">
+                    <h5>Responses to my requests</h5>
+                    <ul class="list-group">
+                        <a class="list-group-item list-group-item-action
+                            d-flex justify-content-between align-items-center" th:each="myRequest : ${myRequests}"
+                           th:href="${'/requests/' + myRequest.getId()}" th:inline="text">
+                            [[${#temporals.format(myRequest.getLocalDateTimeFrom(user.getTimezone()), 'dd MMM yyyy HH:mm')}]]
+                            <div class="mt-n1">
+                                <span class="badge badge-primary badge-pill">[[${myRequest.getRespondedBy().size()}]]</span>
+                            </div>
+                        </a>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+
+                <div th:if="${param.added}" class="alert alert-success">
+                    Your listing has been added. You'll be emailed from the address
+                    <span class="font-weight-bold">healthship@dundee.ac.uk</span> as soon as
+                    you have any responses to your request. Please keep an eye on your spam inbox and add our email
+                    address to your whitelist if need be.
+                </div>
+
+                <div th:if="${param.autoResponded}" class="alert alert-success">
+                    Your offer of help has been sent to the other party. You should have received a copy of this
+                    communication by email (please check spam / junk folders).
+                </div>
+
+                <div th:if="${param.manual}" class="alert alert-success">
+                    Your offer of help has been sent to the other party. You will receive an email as soon as they
+                    accept your offer of help.
+                </div>
+
+                <div th:if="${param.saved}" class="alert alert-success">
+                    Great! Changes to your profile have been saved
+                </div>
+
+                <div class="row form-group">
+                    <div class="input-group col-sm-6 pb-2">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">
+                                <i class="fas fa-road mx-auto"></i>
+                            </div>
+                        </div>
+                        <select id="filter-distance" class="form-control mr-sm-2">
+                            <option th:each="radius : ${#object.user.getNotifyRadius().values()}"
+                                    th:value="${radius}"
+                                    th:selected="${radius.equals(user.getNotifyRadius())}"
+                                    th:text="#{${'home.search-radius.' + radius + '.unit-' + user.getUserUOM().name() }}">option</option>
+                        </select>
+                    </div>
+                    <div class="input-group col-sm-6 pb-2">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">
+                                <i class="fas fa-sort-alpha-down mx-auto"></i>
+                            </div>
+                        </div>
+                        <label for="order-by" class="sr-only">Sort results by</label> <select id="order-by"
+                                                                                              class="form-control">
+                        <option value="distance" selected>Sorted by distance</option>
+                        <option value="createdDT">Sorted by time posted</option>
+                        <option value="startDT">Sorted by start time</option>
+                    </select>
+                    </div>
+                </div>
+
+                <!-- placeholder for AJAX request -->
+                <div id="search-results"></div>
+            </div>
+        </div>
+
+        <!--/* This block should only appear when the user is a student. Also, even
+                    when they're a student, we don't actually display this down here unless they're on
+                    a smaller screen */-->
+        <div class="row d-md-none" th:if="${user.getUserType().equals(T(org.healthship.models.UserType).student)}">
+            <div class="col-12">
+                <div th:replace="fragments/elements :: student-vouch-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-user-profile" tabindex="-1" role="dialog"
+         aria-labelledby="modal-user-profile-title" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-user-profile-title">User Profile</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-user-profile-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-requests-map" tabindex="-1" role="dialog"
+         aria-labelledby="modal-requests-map-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-request-map-title">Open requests near you</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-requests-map-body" style="height:300px;width:100%"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-volunteers-map" tabindex="-1" role="dialog"
+         aria-labelledby="modal-volunteers-map-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-volunteers-map-title">Volunteers near you</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-volunteers-map-body" style="height:300px;width:100%"></div>
+                <div class="modal-footer">
+                    <div th:if="${@localUsersStats.getLocalUsers(user, T(org.healthship.models.UserType).student).getCount() >= 25}">Showing first 25 results</div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-request-type" tabindex="-1" role="dialog"
+         aria-labelledby="modal-request-type-title" aria-hidden="true" th:if="${user.getUserType().canCreateRequests()}">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-request-type-title">Request type</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body " id="modal-request-type-body" tabindex="0">
+                    <div class="list-group">
+                        <a href="/requests" class="list-group-item list-group-item-action flex-column align-items-start">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Ad-hoc</h5>
+                                <small>default</small>
+                            </div>
+                            <p class="mb-1">Use this option if you're wanting to request help for a <span class="font-weight-bold">specific day and time</span>.</p>
+                        </a>
+                        <a href="/requests?noticeboard" class="list-group-item list-group-item-action flex-column align-items-start">
+                            <h5 class="mb-1">Noticeboard</h5>
+                            <p class="mb-1">Looking for help for a few days? Not quite sure when you need help yet? Post it on our noticeboard.</p>
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" th:inline="text">
+
+        var requestsMap = L.map('modal-requests-map-body').setView([ [[${user.getLat()}]], [[${user.getLng()}]]  ], 10);
+
+        L.tileLayer('https://mapsvc.healthship.org/tms/1.0.0/osm/EPSG900913/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 18,
+            tileSize: 256,
+            zoomOffset: -1,
+            tms: true
+        }).addTo(requestsMap);
+
+        var markerSet = new Set();
+        L.Icon.Default.imagePath = '/webjars/leaflet/1.2.0/dist/images/';
+
+        function addMarker(result) {
+            if (!markerSet.has(result.id)) {
+                markerSet.add(result.id);
+                L.marker([result.lat, result.lng])
+                    .addTo(requestsMap)
+                    .bindPopup(`
+                    <a href="/requests/${result.id}">${new Date(result.dateTimeFrom).toLocaleString([], {
+                        "dateStyle": "short", "timeStyle": "short"
+                    })}</a> (${result.duration})`)
+            }
+        }
+
+        function updateRequests(mapObj) {
+            var bounds = mapObj.getBounds();
+            $.ajax({
+                url: "/api/map/requests",
+                data: {
+                    swLat: bounds._southWest.lat,
+                    swLng: bounds._southWest.lng,
+                    neLat: bounds._northEast.lat,
+                    neLng: bounds._northEast.lng
+                },
+                success: function (data) {
+                    for (idx = 0; idx < data.length; idx++) {
+                        addMarker(data[idx]);
+                    }
+                }
+            })
+        }
+
+        requestsMap.on('moveend', function (evt) {
+            updateRequests(requestsMap);
+        });
+
+        $('#modal-requests-map').on('shown.bs.modal', function(){
+            setTimeout(function() {
+                requestsMap.invalidateSize();
+            }, 10);
+        });
+
+
+        var volunteerMap = L.map(
+            'modal-volunteers-map-body',
+            {
+                zoomControl: false,
+                zoom: 10
+            }
+        ).setView([ [[${user.getLat()}]], [[${user.getLng()}]]  ], 10);
+        L.tileLayer('https://mapsvc.healthship.org/tms/1.0.0/osm/EPSG900913/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+            maxZoom: 18,
+            tileSize: 256,
+            zoomOffset: -1,
+            tms: true
+        }).addTo(volunteerMap);
+        var scale = L.control.scale(); // Creating scale control
+        scale.addTo(volunteerMap);
+
+        L.Icon.Default.imagePath = '/webjars/leaflet/1.2.0/dist/images/';
+
+        var volunteerMarkerSet = new Set();
+        function addVolunteerMarker(result) {
+            if (!volunteerMarkerSet.has(result.id)) {
+                volunteerMarkerSet.add(result.id);
+                L.marker([result.lat, result.lng])
+                    .addTo(volunteerMap)
+            }
+        }
+
+        // todo needs refactored so that it takes url as argument and shares
+        // call with the update requests
+        function updateVolunteerMap(mapObj) {
+            var bounds = mapObj.getBounds();
+            $.ajax({
+                url: "/api/map/volunteers",
+                data: {
+                    swLat: bounds._southWest.lat,
+                    swLng: bounds._southWest.lng,
+                    neLat: bounds._northEast.lat,
+                    neLng: bounds._northEast.lng
+                },
+                success: function (data) {
+                    for (idx = 0; idx < data.length; idx++) {
+                        addVolunteerMarker(data[idx]);
+                    }
+                }
+            })
+        }
+
+        $('#modal-volunteers-map').on('shown.bs.modal', function(){
+            setTimeout(function() {
+                volunteerMap.invalidateSize();
+                volunteerMap._handlers.forEach(function(handler) {
+                    handler.disable();
+                });
+                updateVolunteerMap(volunteerMap);
+            }, 10);
+        });
+
+    </script>
+</div>
+</body>
+</html>

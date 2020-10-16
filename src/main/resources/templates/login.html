@@ -1,0 +1,190 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>Health Students Helping In Pandemics - Login</title>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="shadow p-4">
+                <form name="f" th:action="@{/login}" method="post">
+                    <fieldset>
+                        <legend th:text="#{login.form.title}">form</legend>
+                        <div th:if="${param.error}" class="alert alert-danger">
+                            Invalid username or password
+                        </div>
+                        <div th:if="${param.logout}" class="alert alert-success">
+                            You have been logged out
+                        </div>
+                        <div th:if="${param.reset}" class="alert alert-success">
+                            Your password has been successfully reset, please log in
+                        </div>
+                        <div class="form-group">
+                            <label for="username" class="text-hide">Username</label> <input type="text"
+                                                                                            class="form-control"
+                                                                                            id="username"
+                                                                                            name="username"
+                                                                                            placeholder="institutional email address"
+                                                                                            autofocus/>
+                        </div>
+                        <div class="form-group">
+                            <label for="password" class="text-hide">Password</label> <input type="password"
+                                                                                            class="form-control"
+                                                                                            id="password"
+                                                                                            name="password"
+                                                                                            placeholder="password"/>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-outline-primary">Log in</button>
+                        </div>
+                    </fieldset>
+                </form>
+                <div class="pt-2 d-sm-flex d-md-block justify-content-between d-lg-flex">
+                    <div><a th:href="@{/forgot-password}">Forgot password</a></div>
+                    <div>Not registered? <a th:href="@{/registration}">Sign up now</a></div>
+                </div>
+            </div>
+            <div class="alert alert-light text-center text-muted mt-3 small" th:inline="text">
+                Now at [[${@sysInfoSvc.getUniversities().getValue()}]] universities across the country (and counting)!
+                <!-- updates every 30 mins -->
+            </div>
+        </div>
+        <div class="col-md-6 p-4">
+            <div>
+                <div>
+                    <h3 class="alert alert-secondary p-3 mb-2 text-center"><i class="far fa-flag mr-3"></i> New to HealthSHIP?</h3>
+                    <button type="button" class="btn btn-primary btn-block btn-lg"
+                            data-toggle="modal" data-target="#modal-info-staff">I need help</button>
+                    <button type="button" class="btn btn-success btn-block btn-lg"
+                            data-toggle="modal" data-target="#modal-info-volunteer">I want to help</button>
+                    <a href="/about" class="btn btn-sm btn-block mt-4 text-muted">About HealthSHIP</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="alert alert-light">
+                <video controls="controls" poster="https://assets.healthship.org/public-intro/000.png" class="embed-responsive">
+                    <source src="https://assets.healthship.org/public-intro/000.mp4" type="video/mp4">
+                    <source src="https://assets.healthship.org/public-intro/000.webm" type="video/webm">
+                    <source src="https://assets.healthship.org/public-intro/000.ogv" type="video/ogg">
+                </video>
+            </div>
+        </div>
+        <div class="col-md-6 mt-auto">
+            <div class="d-flex justify-content-center">
+                <a href="https://twitter.com/HealthSHIP_IE" class="btn btn-outline-info mr-2"><i class="fab fa-twitter"></i> HealthSHIP Ireland</a>
+                <a href="https://twitter.com/HealthSHIP_UK" class="btn btn-outline-info ml-2"><i class="fab fa-twitter"></i> HealthSHIP UK</a>
+            </div>
+            <div class="alert alert-light">
+                <div class="d-flex justify-content-between">
+                    <div class="mr-3 my-auto text-right">Kindly endorsed&nbsp;by</div>
+                    <div><img class="img-fluid p-3" src="/images/rcpsg.jpeg" alt="RCPSG logo"></div>
+                </div>
+                <div class="text-muted small">The Royal College of Physicians and Surgeons of Glasgow will provide
+                    certificates to all healthcare students volunteering their time through HealthSHIP
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-info-staff" tabindex="-1" role="dialog" aria-labelledby="modal-info-staff-title"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-info-staff-title">How can I get help?</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-info-staff-body">
+                    <div class="d-flex justify-content-between">
+                        <h3 class="mr-3 text-nowrap my-auto">Step one <i class="far fa-hand-point-right ml-2"></i></h3>
+                        <a class="btn btn-warning btn-block align-items-center" href="/registration"> Register on HealthSHIP</a>
+                    </div>
+                    <div class="mt-2 text-muted">You'll be asked to sign up with a work email address, but you can use
+                        a personal one after we've confirmed your identity.
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <h3 class="mr-3 text-nowrap my-auto">Step two <i class="far fa-hand-point-right ml-2"></i></h3>
+                        <a class="btn btn-outline-primary btn-block align-items-center" href="/requests"><i class="fas fa-hands-helping"></i> Post your request</a>
+                    </div>
+
+                    <div class="mt-2 mb-4">We <span class="font-weight-bold">automatically notify</span> volunteers
+                        in your local area as soon as you post your request for help. You then
+                        <span class="font-weight-bold">choose the most suitable volunteer</span>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <a class="btn btn-warning" href="/registration">Register</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-info-volunteer" tabindex="-1" role="dialog" aria-labelledby="modal-info-volunteer-title"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-info-volunteer-title">How can I help?</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-info-volunteer-body">
+                    <div class="d-flex justify-content-between">
+                        <h3 class="mr-3 text-nowrap my-auto">Step one <i class="far fa-hand-point-right ml-2"></i></h3>
+                        <a class="btn btn-warning btn-block align-items-center" href="/registration"> Register on HealthSHIP</a>
+                    </div>
+                    <div class="mt-2 text-muted">You'll be asked to sign up with your university address but you can
+                        add another address after you log in.
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <h3 class="mr-3 text-nowrap my-auto">Step two <i class="far fa-hand-point-right ml-2"></i></h3>
+                        <a class="btn btn-outline-success btn-block align-items-center" href="/"><i class="fas fa-hands-helping"></i> Start helping</a>
+                    </div>
+
+                    <div class="mt-2 mb-4">You can search for and reply requests in your local area or
+                        wait till we <span class="font-weight-bold">automatically notify you</span> of any
+                        requests for help in your area: rest assured, we need you!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <a class="btn btn-warning" href="/registration">Register</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

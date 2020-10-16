@@ -1,0 +1,398 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en" layout:decorate="~{layout}">
+<head>
+    <title>Request help</title>
+    <script>
+        $(document).ready(function () {
+            $("#dateTimeFromPicker").datetimepicker({
+                inline: true,
+                sideBySide: true,
+                stepping: 15,
+                format: "YYYY-MM-DD HH:mm"
+            });
+
+            $("#dateTimeToPicker").datetimepicker({
+                inline: true,
+                sideBySide: true,
+                stepping: 15,
+                format: "YYYY-MM-DD HH:mm"
+            });
+
+            $('#dateTimeFromModalSubmit').on('click', function () {
+                var dtfPicker = $('#dateTimeFromPicker');
+                $('#dateTimeFromDummy').val(dtfPicker.data('DateTimePicker').viewDate().format('YYYY-MM-DD HH:mm'));
+                $('#dateTimeFrom').val(dtfPicker.data('DateTimePicker').viewDate().toISOString());
+                // make it a bit more user friendly by also populating the other field
+                $('#dateTimeToPicker').data('DateTimePicker').date(dtfPicker.data('DateTimePicker').viewDate().add(1, 'hours').toDate());
+                $('#dateTimeToDummy').val(dtfPicker.data('DateTimePicker').viewDate().add(1, 'hours').format('YYYY-MM-DD HH:mm'));
+                $('#dateTimeTo').val(dtfPicker.data('DateTimePicker').viewDate().add(1, 'hours').toISOString());
+            });
+
+            $("#dateTimeToModalSubmit").on('click', function () {
+                var dttPicker = $('#dateTimeToPicker');
+                $('#dateTimeToDummy').val(dttPicker.data('DateTimePicker').viewDate().format('YYYY-MM-DD HH:mm'));
+                $('#dateTimeTo').val(dttPicker.data('DateTimePicker').viewDate().toISOString());
+            });
+
+            $("#helpWith").on('change', function () {
+                var destinationRow = $("#destinationRow");
+                if ($(this).find(':selected').data('mapping-behaviour') === "A_B") {
+                    destinationRow.slideDown('fast');
+                } else {
+                    destinationRow.slideUp('fast');
+                }
+            });
+        });
+    </script>
+    <script th:if="${isAdmin}">
+        let resources = /*[[ (${ resourcesJSON }) ]]*/ [];
+
+        $(document).ready(function () {
+            for (const resource of resources) {
+                addResouce(resource)
+            }
+            $("#requestHelpForm").on('submit', function (e) {
+                e.preventDefault();
+                var new_resources = [];
+                for (let idx = 0; idx < resources.length; idx++) {
+                    if (resources[idx] === null) continue;
+                    new_resources.push(
+                        {
+                            name: $(`#resource_${idx}_name`).val(),
+                            uri: $(`#resource_${idx}_uri`).val()
+                        }
+                    )
+                }
+                $("#resourcesJSON").val(JSON.stringify(new_resources));
+                this.submit();
+            });
+        });
+
+        // resource setup:
+        // resourceJSON is passed as a single input string to the backend
+        // var resources is an array of nullable objects; if the line is removed, the object entry turns null
+        // a null check on submitting the form ensures that the correct set of resources is sent through
+
+        function addResource(obj) {
+            resources.push({});
+            // use zero-based for all idx
+            let idx = resources.length - 1;
+            $("#resources").append(
+                `<div class="form-group row" id="resource_row_${idx}">
+                    <label for="resource_${idx}_name" class="col-4 col-form-label sr-only">Resource ${idx}</label>
+                    <div class="col-md-3 offset-md-4">
+                        <div class="input-group">
+                            <input id="resource_${idx}_name" placeholder="Resource name" type="text" class="form-control"
+                            value="${(undefined !== obj) ? obj.name : ''}">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="d-flex justify-content-between">
+                            <div class="input-group">
+                                <input id="resource_${idx}_uri" placeholder="URI" type="text" class="form-control"
+                                value="${(undefined !== obj) ? obj.uri : ''}">
+                            </div>
+                            <button type="button" onclick="removeResource(${idx})"
+                                class="ml-md-3 btn btn-outline-danger"><icon class="fas fa-trash"></icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>`
+            );
+        }
+
+        function removeResource(idx) {
+            resources[idx] = null;
+            $(`#resource_row_${idx}`).hide();
+        }
+    </script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let autocomplete = {};
+        let circles = {};
+        let mapInstances = [];
+        // holds array of map elements (not map object instances!)
+        let mapElements = [];
+        /*]]>*/
+    </script>
+    <script th:src="@{/js/LocationServices.js}"></script>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Request help</h2>
+                <div class="alert alert-light">
+                    Enter details below: your request for help will be posted on this site, where people will then be
+                    able to reply to you.
+                </div>
+                <form method="post" th:action="@{/requests}" th:object="${helpRequest}" id="requestHelpForm">
+                    <div class="form-group row">
+<!--                        <div (if current user is an org) class="col-md-4 d-flex justify-content-end"><div class="btn-group btn-group-toggle" data-toggle="buttons">-->
+<!--                            <label class="btn btn-outline-info">-->
+<!--                                <input type="radio" name="options" id="option1" autocomplete="off" checked="">Ad-hoc</label>-->
+<!--                            <label class="btn btn-outline-info active">-->
+<!--                                <input type="radio" name="options" id="option2" autocomplete="off">Notice</label>-->
+<!--                        </div></div>-->
+                        <div class="col-md-4 offset-md-4">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-calendar-alt mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input type="text" class="form-control" placeholder="Date from"
+                                       th:field="*{dateTimeFromDummy}" data-toggle="modal"
+                                       data-target="#dateTimeFromModal"> <input type="hidden" id="dateTimeFrom"
+                                                                                th:field="*{dateTimeFrom}">
+                            </div>
+                            <div class="alert alert-danger mt-3" th:if="${#fields.hasErrors('dateTimeFrom')}">
+                                <div th:each="error : ${#fields.errors('dateTimeFrom')}" th:text="${error}">Validation
+                                    error
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mt-sm-3 mt-md-0">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-calendar-alt mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input type="text" class="form-control" placeholder="To (within 12 hours of start)"
+                                       th:field="*{dateTimeToDummy}" data-toggle="modal" data-target="#dateTimeToModal">
+                                <input type="hidden" id="dateTimeTo" th:field="*{dateTimeTo}">
+                            </div>
+                            <div class="alert alert-danger mt-3" th:if="${#fields.hasErrors('dateTimeTo')}">
+                                <div th:each="error : ${#fields.errors('dateTimeTo')}" th:text="${error}">Validation
+                                    error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{helpWith}" class="col-md-4 col-form-label text-md-right">What do you need help
+                            with?</label>
+                        <div class="col-10 col-md-8">
+
+                            <select class="custom-control custom-select custom-control-inline" th:field="*{helpWith}">
+                                <option th:each="helpWithItem : ${T(org.healthship.models.HelpWith).values()}"
+                                        th:value="${helpWithItem}"
+                                        th:data-mapping-behaviour="${helpWithItem.getBehaviour()}"
+                                        th:text="#{${'help-with.feature.' + helpWithItem}}">option
+                                </option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{origin}" class="col-md-4 col-form-label text-md-right">Location where help is
+                            required</label>
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-compass mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input th:field="*{originLng}" type="hidden"/> <input th:field="*{originLat}"
+                                                                                      type="hidden"/> <input id="origin"
+                                                                                                             th:field="*{origin}"
+                                                                                                             type="text"
+                                                                                                             placeholder="Enter or update location"
+                                                                                                             data-toggle="modal"
+                                                                                                             data-target="#originModal"
+                                                                                                             class="form-control"
+                                                                                                             aria-describedby="originHelpBlock">
+                            </div>
+                            <span id="originHelpBlock" class="form-text text-muted">
+                                For your privacy, we deliberately reduce the accuracy of the location we store to ±1km
+                            </span>
+
+                            <div class="alert alert-danger mt-3" th:if="${#fields.hasErrors('origin')}">
+                                <div th:each="error : ${#fields.errors('origin')}" th:text="${error}">Validation error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row" id="destinationRow"
+                         th:styleappend="${helpRequest.getHelpWith().getBehaviour().equals(T(org.healthship.models.internal.MappingBehaviour).POINT) ? 'display: none' : ''}">
+                        <label th:for="*{destination}" class="col-md-4 col-form-label text-md-right">Drop-off
+                            destination (if applicable)</label>
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="far fa-compass mx-auto"></i>
+                                    </div>
+                                </div>
+                                <input th:field="*{destinationLng}" type="hidden"/> <input th:field="*{destinationLat}"
+                                                                                           type="hidden"/> <input
+                                    id="destination" th:field="*{destination}" type="text"
+                                    placeholder="Enter or update location" data-toggle="modal"
+                                    data-target="#destinationModal" class="form-control">
+                            </div>
+
+                            <div class="alert alert-danger mt-3" th:if="${#fields.hasErrors('destination')}">
+                                <div th:each="error : ${#fields.errors('destination')}" th:text="${error}">Validation
+                                    error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label th:for="*{description}" class="col-md-4 col-form-label text-md-right">Description</label>
+                        <div class="col-md-8">
+                            <textarea id="description" th:field="*{description}" cols="40" rows="5" class="form-control"
+                                      aria-describedby="descriptionHelpBlock"></textarea>
+                            <div id="descriptionHelpBlock" class="form-text text-muted d-flex justify-content-between">
+                                <span class="my-auto">Maximum 1000 characters</span> <a href="#"
+                                                                                        class="btn btn-outline-secondary btn-sm"
+                                                                                        data-toggle="modal"
+                                                                                        data-target="#instructionsModal"><i
+                                    class="fas fa-plus-circle"></i> Add instructions</a>
+                            </div>
+                            <div class="alert alert-danger mt-3" th:if="${#fields.hasErrors('description')}">
+                                <div th:each="error : ${#fields.errors('description')}" th:text="${error}">Validation
+                                    error
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row" th:if="${isAdmin}">
+                        <input type="hidden" id="resourcesJSON" name="resourcesJSON"> <label
+                            class="col-md-4 col-form-label text-md-right">Resources</label>
+                        <div class="col-md-8">
+                            <div class="form-text text-muted d-flex justify-content-between">
+                                <a href="#" onclick="addResource()" class="btn btn-outline-secondary btn-sm"><i
+                                        class="fas fa-plus-circle"></i> Add resource</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="resources" th:if="${isAdmin}"></div>
+
+                    <div class="modal fade" id="instructionsModal" tabindex="-1" role="dialog"
+                         aria-labelledby="instructionsModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="instructionsModalLabel">Additional instructions</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div>These instructions will only be released to a volunteer once you have confirmed
+                                        that they are to undertake a task on your behalf.
+                                    </div>
+                                    <textarea id="instructions" th:field="*{instructions}" cols="40" rows="3"
+                                              class="form-control" aria-describedby="instructionsHelpBlock"
+                                              placeholder="eg Door buzzer is 1234, house number 23"></textarea> <span
+                                        id="instructionsHelpBlock" class="form-text text-muted">
+                                        Do not submit sensitive information eg a person's DOB
+                                    </span>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary" data-dismiss="modal"><i
+                                            class="fas fa-check"></i> OK
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="col-md-8 offset-md-4">
+                            <div class="custom-control custom-checkbox custom-control-inline">
+                                <input type="checkbox" id="autoAccept" class="custom-control-input" name="autoAccept"
+                                       th:checked="*{autoAccept == null}"/> <label class="custom-control-label"
+                                                                                   for="autoAccept">Automatically accept
+                                any response</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="offset-md-4 col-md-8">
+                            <button name="submitButton" type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="dateTimeFromModal" tabindex="-1" role="dialog" aria-labelledby="dateTimeFromModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dateTimeFromModalLabel">Date / time from</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="dateTimeFromPicker"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="dateTimeFromModalSubmit" type="button" class="btn btn-primary" data-dismiss="modal">Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="dateTimeToModal" tabindex="-1" role="dialog" aria-labelledby="dateTimeToModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dateTimeToModalLabel">Date / time to</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="dateTimeToPicker"></div>
+                </div>
+                <div class="modal-footer">
+                    <button id="dateTimeToModalSubmit" type="button" class="btn btn-primary" data-dismiss="modal">Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/elements :: location-modal(origin)"></div>
+    <div th:replace="fragments/elements :: location-modal(destination)"></div>
+    <script th:src="${'https://maps.googleapis.com/maps/api/js?key=' + @gMapsApiTokens.getJavaScript() + '&callback=initMaps&libraries=places'}"
+            async defer></script>
+</div>
+</body>
+</html>

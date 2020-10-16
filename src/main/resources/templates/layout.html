@@ -1,0 +1,75 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en">
+<head>
+    <title layout:title-pattern="$LAYOUT_TITLE - $CONTENT_TITLE">HealthSHIP</title>
+    <meta charset="utf-8">
+    <meta name="application-name" content="HealthSHIP"
+          th:data-commit-id="${@gitProperties.getCommitId()}"
+          th:data-commit-by="${@gitProperties.get('commit.user.email')}"
+          th:data-commit-dt="${@gitProperties.getCommitTime()}">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
+    <link th:href="@{/webjars/bootstrap/4.4.1-1/css/bootstrap.min.css}" rel="stylesheet" media="screen"/>
+    <link th:href="@{/webjars/font-awesome/5.12.0/css/all.min.css}" rel="stylesheet" media="screen"/>
+    <link th:href="@{/css/site.css}" rel="stylesheet" media="screen"/>
+    <link th:href="@{/webjars/eonasdan-bootstrap-datetimepicker/4.17.47/build/css/bootstrap-datetimepicker.min.css}"
+          rel="stylesheet" media="screen"/>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        let section = /*[[ ${section} ]]*/ 'Section';
+        let _csrf = /*[[ ${_csrf.token} ]]*/ 'token';
+        /*]]>*/
+    </script>
+    <!-- todo: merge these all into one on production build -->
+    <script th:src="@{/webjars/jquery/3.4.1/jquery.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/4.4.1-1/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/font-awesome/5.12.0/js/fontawesome.min.js}"></script>
+    <script th:src="@{/webjars/momentjs/2.24.0/min/moment-with-locales.min.js}"></script>
+    <script th:src="@{/webjars/eonasdan-bootstrap-datetimepicker/4.17.47/build/js/bootstrap-datetimepicker.min.js}"></script>
+    <script th:src="@{/webjars/jQuery-Autocomplete/1.4.10/jquery.autocomplete.min.js}"></script>
+    <script th:src="@{/js/jquery.validate.main.js}"></script>
+    <script th:src="@{/js/alerts.js}"></script>
+    <script
+            th:with="host=${#request.getServerName()},port=${@environment.getProperty('spring.devtools.livereload.port')}"
+            th:src="@{/js/livereload.js(host=${host}, port=${port == null} ? 35729 : ${port}, v=3.2.2, snipver=1)}"
+            th:if="${@environment.getProperty('hs.devtools.livereload.include-js')}" async defer></script>
+    <link rel="apple-touch-icon" sizes="57x57" th:href="@{/images/icon/apple-icon-57x57.png}">
+    <link rel="apple-touch-icon" sizes="60x60" th:href="@{/images/icon/apple-icon-60x60.png}">
+    <link rel="apple-touch-icon" sizes="72x72" th:href="@{/images/icon/apple-icon-72x72.png}">
+    <link rel="apple-touch-icon" sizes="76x76" th:href="@{/images/icon/apple-icon-76x76.png}">
+    <link rel="apple-touch-icon" sizes="114x114" th:href="@{/images/icon/apple-icon-114x114.png}">
+    <link rel="apple-touch-icon" sizes="120x120" th:href="@{/images/icon/apple-icon-120x120.png}">
+    <link rel="apple-touch-icon" sizes="144x144" th:href="@{/images/icon/apple-icon-144x144.png}">
+    <link rel="apple-touch-icon" sizes="152x152" th:href="@{/images/icon/apple-icon-152x152.png}">
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/icon/apple-icon-180x180.png}">
+    <link rel="icon" type="image/png" sizes="192x192"  th:href="@{/images/icon/android-icon-192x192.png}">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/icon/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="96x96" th:href="@{/images/icon/favicon-96x96.png}">
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/icon/favicon-16x16.png}">
+</head>
+<body>
+<header th:replace="fragments/header :: header"></header>
+<div class="container mb-5">
+    <div layout:fragment="content"></div>
+</div>
+<footer th:replace="fragments/footer :: footer"></footer>
+</body>
+</html>

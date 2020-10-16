@@ -1,0 +1,69 @@
+<!--
+  ~ Copyright (c) 2020 Ronald MacDonald <ronald@rmacd.com>
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~
+  ~ You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" lang="en"
+      layout:decorate="~{layout}">
+<head>
+    <title>Your offer of help</title>
+</head>
+<body>
+
+<div class="container" layout:fragment="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+
+                <h2>Thanks for offering to help!</h2>
+
+                <div class="card my-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <div class="my-auto">You have committed to assisting as follows</div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title mb-1" th:inline="text">
+                            [[${helpRequest.getCreatedBy().getName()}]] <small class="text-muted">[[${helpRequest.getOrigin()}]]
+                            ([[ ${@distanceCalculator.getCrowDistanceBetweenUserAndOriginAsString(user, helpRequest)} ]] away)</small></h4>
+                        <div th:replace="fragments/elements :: distance-matrix-result(${user}, ${helpRequest})"
+                             th:if="${null != helpRequest.getDestination() && !helpRequest.getDestination().isEmpty()}"></div>
+                        <div class="text-muted mb-3" th:inline="text">
+                            [[${#temporals.format(helpRequest.getLocalDateTimeFrom(user.getTimezone()), 'dd MMM yyyy HH:mm')}]] &mdash;
+                            [[${#temporals.format(helpRequest.getLocalDateTimeTo(user.getTimezone()), 'dd MMM yyyy HH:mm')}]]
+                        </div>
+                        <p class="card-text" th:text="${helpRequest.getDescription()}">description</p>
+                        <p class="card-text" th:inline="text">
+                            Contact details: This user can be contacted at the address <a href="mailto:[[${helpRequest.getCreatedBy().getUsername()}]]">[[${helpRequest.getCreatedBy().getUsername()}]]</a>
+                        </p>
+                        <p class="card-text" th:inline="text" th:if="${null != helpRequest.getCreatedBy().getPhone() && !helpRequest.getCreatedBy().getPhone().isEmpty()}">
+                            This user has provided the following contact number for your use:
+                            <a href="tel:[[${helpRequest.getCreatedBy().getPhone()}]]">[[${helpRequest.getCreatedBy().getPhone()}]]</a>
+                        </p>
+                        <div th:if="${null != helpRequest.getInstructions() && !helpRequest.getInstructions().isEmpty()}">
+                            The following information has also been made available for <span class="font-weight-bold">your use only</span>.
+                            Please do not share this with anyone else.
+                            <div class="alert alert-info" th:text="${helpRequest.getInstructions()}"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
